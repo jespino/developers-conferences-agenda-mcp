@@ -12,7 +12,7 @@ import (
 	"github.com/metoro-io/mcp-golang/transport/stdio"
 )
 
-const eventDataURL = "https://developers.events/all-events.json"
+var eventDataURL = "https://developers.events/all-events.json"
 
 // Event represents a developer conference or event
 type Event struct {

@@ -35,7 +35,10 @@ func TestContains(t *testing.T) {
 func TestFetchAndParseEvents(t *testing.T) {
 	// Save original URL and restore after tests
 	originalURL := eventDataURL
-	defer func() { eventDataURL = originalURL }()
+	defer func() { 
+		// Restore the original URL after all tests in this function
+		eventDataURL = originalURL 
+	}()
 
 	t.Run("Successfully parses direct array JSON", func(t *testing.T) {
 		// Create test server with mock response
