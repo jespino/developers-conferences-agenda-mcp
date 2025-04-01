@@ -78,7 +78,7 @@ func millisToTime(millis int64) time.Time {
 	if millis == 0 {
 		return time.Time{}
 	}
-	return time.Unix(0, millis*int64(time.Millisecond)).UTC()
+	return time.UnixMilli(millis).UTC()
 }
 
 func fetchAndParseEvents() ([]Event, error) {
