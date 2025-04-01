@@ -1,6 +1,6 @@
 module github.com/jespino/developers-conferences-agenda-mcp
 
-go 1.24.0
+go 1.21.0
 
 require github.com/metoro-io/mcp-golang v0.8.0
 
