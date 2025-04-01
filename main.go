@@ -34,14 +34,14 @@ type EventData struct {
 
 // SearchEventsArgs defines parameters for searching events
 type SearchEventsArgs struct {
-	Query           string `json:"query" jsonschema:"description=Search query for event name or description"`
-	Location        string `json:"location" jsonschema:"description=Filter events by location"`
-	FromDate        string `json:"fromDate" jsonschema:"description=Filter events starting from this date (YYYY-MM-DD)"`
-	ToDate          string `json:"toDate" jsonschema:"description=Filter events up to this date (YYYY-MM-DD)"`
-	HasOpenCFP      bool   `json:"hasOpenCFP" jsonschema:"description=Only show events with open CFPs (Call for Papers)"`
-	CFPFromDate     string `json:"cfpFromDate" jsonschema:"description=Filter events with CFP ending after this date (YYYY-MM-DD)"`
-	CFPToDate       string `json:"cfpToDate" jsonschema:"description=Filter events with CFP ending before this date (YYYY-MM-DD)"`
-	Limit           int    `json:"limit" jsonschema:"description=Maximum number of events to return"`
+	Query       string `json:"query" jsonschema:"description=Search query for event name or description"`
+	Location    string `json:"location" jsonschema:"description=Filter events by location"`
+	FromDate    string `json:"fromDate" jsonschema:"description=Filter events starting from this date (YYYY-MM-DD)"`
+	ToDate      string `json:"toDate" jsonschema:"description=Filter events up to this date (YYYY-MM-DD)"`
+	HasOpenCFP  bool   `json:"hasOpenCFP" jsonschema:"description=Only show events with open CFPs (Call for Papers)"`
+	CFPFromDate string `json:"cfpFromDate" jsonschema:"description=Filter events with CFP ending after this date (YYYY-MM-DD)"`
+	CFPToDate   string `json:"cfpToDate" jsonschema:"description=Filter events with CFP ending before this date (YYYY-MM-DD)"`
+	Limit       int    `json:"limit" jsonschema:"description=Maximum number of events to return"`
 }
 
 // FetchAndParseEvents retrieves the event data from the URL
@@ -131,7 +131,7 @@ func main() {
 			if !toDate.IsZero() && event.StartDate.After(toDate) {
 				continue
 			}
-			
+
 			// CFP filters
 			if args.HasOpenCFP && (!event.CFPEndDate.After(now) || event.CFPUrl == "") {
 				continue
@@ -144,7 +144,7 @@ func main() {
 			}
 
 			filteredEvents = append(filteredEvents, event)
-			
+
 			// Respect limit if set
 			if args.Limit > 0 && len(filteredEvents) >= args.Limit {
 				break
@@ -157,7 +157,7 @@ func main() {
 			return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(fmt.Sprintf("Error encoding events: %s", err))), nil
 		}
 
-		return mcp_golang.NewToolResponse(mcp_golang.NewJSONContent(string(eventJSON))), nil
+		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(eventJSON))), nil
 	})
 	if err != nil {
 		panic(err)
@@ -172,12 +172,12 @@ func main() {
 
 		now := time.Now()
 		var openCFPEvents []Event
-		
+
 		for _, event := range events {
 			// Only include events with open CFPs (CFP deadline in the future and has CFP URL)
 			if event.CFPEndDate.After(now) && event.CFPUrl != "" {
 				openCFPEvents = append(openCFPEvents, event)
-				
+
 				if limit > 0 && len(openCFPEvents) >= limit {
 					break
 				}
@@ -189,7 +189,7 @@ func main() {
 			return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(fmt.Sprintf("Error encoding events: %s", err))), nil
 		}
 
-		return mcp_golang.NewToolResponse(mcp_golang.NewJSONContent(string(eventJSON))), nil
+		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(eventJSON))), nil
 	})
 	if err != nil {
 		panic(err)
@@ -222,7 +222,7 @@ func main() {
 
 		now := time.Now()
 		var openCFPEvents []Event
-		
+
 		for _, event := range events {
 			if event.CFPEndDate.After(now) && event.CFPUrl != "" {
 				openCFPEvents = append(openCFPEvents, event)
@@ -249,11 +249,11 @@ func main() {
 
 		now := time.Now()
 		var upcomingEvents []Event
-		
+
 		for _, event := range events {
 			if event.StartDate.After(now) {
 				upcomingEvents = append(upcomingEvents, event)
-				
+
 				if limit > 0 && len(upcomingEvents) >= limit {
 					break
 				}
@@ -265,7 +265,7 @@ func main() {
 			return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(fmt.Sprintf("Error encoding events: %s", err))), nil
 		}
 
-		return mcp_golang.NewToolResponse(mcp_golang.NewJSONContent(string(eventJSON))), nil
+		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(eventJSON))), nil
 	})
 	if err != nil {
 		panic(err)
@@ -276,7 +276,7 @@ func main() {
 		if days <= 0 {
 			days = 30 // Default to 30 days if not specified
 		}
-		
+
 		events, err := fetchAndParseEvents()
 		if err != nil {
 			return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(fmt.Sprintf("Error fetching events: %s", err))), nil
@@ -285,7 +285,7 @@ func main() {
 		now := time.Now()
 		deadline := now.AddDate(0, 0, days)
 		var approachingCFPs []Event
-		
+
 		for _, event := range events {
 			// Include events where CFP is still open but deadline is approaching
 			if event.CFPEndDate.After(now) && event.CFPEndDate.Before(deadline) && event.CFPUrl != "" {
@@ -298,7 +298,7 @@ func main() {
 			return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(fmt.Sprintf("Error encoding events: %s", err))), nil
 		}
 
-		return mcp_golang.NewToolResponse(mcp_golang.NewJSONContent(string(eventJSON))), nil
+		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(eventJSON))), nil
 	})
 	if err != nil {
 		panic(err)
@@ -317,3 +317,4 @@ func contains(s, substr string) bool {
 	s, substr = strings.ToLower(s), strings.ToLower(substr)
 	return strings.Contains(s, substr)
 }
+
