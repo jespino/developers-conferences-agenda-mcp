@@ -6,13 +6,21 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	mcp_golang "github.com/metoro-io/mcp-golang"
 	"github.com/metoro-io/mcp-golang/transport/stdio"
 )
 
-var eventDataURL = "https://developers.events/all-events.json"
+var (
+	eventDataURL = "https://developers.events/all-events.json"
+	
+	// Cache for events data
+	eventsCache     []Event
+	eventsCacheMux  sync.RWMutex
+	eventsCacheErr  error
+)
 
 // Event represents a developer conference or event
 type Event struct {
@@ -70,6 +78,33 @@ type DaysArgs struct {
 // Exported for testing
 func FetchAndParseEvents() ([]Event, error) {
 	return fetchAndParseEvents()
+}
+
+// getEvents returns events from cache or fetches them if necessary
+func getEvents() ([]Event, error) {
+	eventsCacheMux.RLock()
+	if eventsCache != nil || eventsCacheErr != nil {
+		events := eventsCache
+		err := eventsCacheErr
+		eventsCacheMux.RUnlock()
+		return events, err
+	}
+	eventsCacheMux.RUnlock()
+	
+	// No cached data yet, need to fetch
+	eventsCacheMux.Lock()
+	defer eventsCacheMux.Unlock()
+	
+	// Double-check in case another goroutine fetched while we were waiting for the lock
+	if eventsCache != nil || eventsCacheErr != nil {
+		return eventsCache, eventsCacheErr
+	}
+	
+	// Actually fetch the data
+	events, err := fetchAndParseEvents()
+	eventsCache = events
+	eventsCacheErr = err
+	return events, err
 }
 
 // fetchAndParseEvents retrieves the event data from the URL
@@ -138,7 +173,7 @@ func main() {
 
 	// Register tool to search for events
 	err := server.RegisterTool("search_events", "Search for developer conferences and events", func(args SearchEventsArgs) (*mcp_golang.ToolResponse, error) {
-		events, err := fetchAndParseEvents()
+		events, err := getEvents()
 		if err != nil {
 			return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(fmt.Sprintf("Error fetching events: %s", err))), nil
 		}
@@ -222,7 +257,7 @@ func main() {
 
 	// Register tool for events with open CFPs
 	err = server.RegisterTool("open_cfps", "Get events with open CFP (Call for Papers)", func(args LimitArgs) (*mcp_golang.ToolResponse, error) {
-		events, err := fetchAndParseEvents()
+		events, err := getEvents()
 		if err != nil {
 			return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(fmt.Sprintf("Error fetching events: %s", err))), nil
 		}
@@ -254,7 +289,7 @@ func main() {
 
 	// Register resource for accessing all events
 	err = server.RegisterResource("events://all", "all_events", "All developer conferences and events", "application/json", func() (*mcp_golang.ResourceResponse, error) {
-		events, err := fetchAndParseEvents()
+		events, err := getEvents()
 		if err != nil {
 			return nil, err
 		}
@@ -272,7 +307,7 @@ func main() {
 
 	// Register resource for accessing events with open CFPs
 	err = server.RegisterResource("events://open-cfps", "open_cfps", "Events with open Call for Papers", "application/json", func() (*mcp_golang.ResourceResponse, error) {
-		events, err := fetchAndParseEvents()
+		events, err := getEvents()
 		if err != nil {
 			return nil, err
 		}
@@ -299,7 +334,7 @@ func main() {
 
 	// Register tool to get upcoming events
 	err = server.RegisterTool("upcoming_events", "Get upcoming developer conferences and events", func(args LimitArgs) (*mcp_golang.ToolResponse, error) {
-		events, err := fetchAndParseEvents()
+		events, err := getEvents()
 		if err != nil {
 			return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(fmt.Sprintf("Error fetching events: %s", err))), nil
 		}
@@ -334,7 +369,7 @@ func main() {
 			args.Days = 30 // Default to 30 days if not specified
 		}
 
-		events, err := fetchAndParseEvents()
+		events, err := getEvents()
 		if err != nil {
 			return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(fmt.Sprintf("Error fetching events: %s", err))), nil
 		}
