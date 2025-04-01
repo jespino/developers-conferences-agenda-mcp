@@ -53,6 +53,12 @@ type DaysArgs struct {
 }
 
 // FetchAndParseEvents retrieves the event data from the URL
+// Exported for testing
+func FetchAndParseEvents() ([]Event, error) {
+	return fetchAndParseEvents()
+}
+
+// fetchAndParseEvents retrieves the event data from the URL
 func fetchAndParseEvents() ([]Event, error) {
 	resp, err := http.Get(eventDataURL)
 	if err != nil {
