@@ -176,7 +176,7 @@ func main() {
 		var filteredEvents []Event
 		for _, event := range events {
 			// Apply filters
-			if args.Query != "" && !contains(event.Name+event.Description, args.Query) {
+			if args.Query != "" && !contains(event.Name+event.Location+event.City+event.Country+event.Misc, args.Query) {
 				continue
 			}
 			if args.Location != "" && !contains(event.Location, args.Location) {

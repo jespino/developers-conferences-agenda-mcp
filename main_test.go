@@ -8,13 +8,7 @@ import (
 	"time"
 )
 
-// millisToTime helper for tests (duplicate of the one in main.go)
-func millisToTime(millis int64) time.Time {
-	if millis == 0 {
-		return time.Time{}
-	}
-	return time.Unix(0, millis*int64(time.Millisecond))
-}
+// Use millisToTime from main package
 
 func TestContains(t *testing.T) {
 	testCases := []struct {
