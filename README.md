@@ -2,12 +2,6 @@
 
 [MCP](https://github.com/metoro-io/mcp-golang) server that provides access to developer conferences and events data. This plugin fetches information from [developers.events](https://developers.events/) and makes it available through MCP-compatible clients like Claude.
 
-## Feature Demo
-
-![Demo GIF](https://example.com/placeholder-for-demo.gif)
-
-*Demonstration of searching for events with upcoming CFP deadlines*
-
 ## Features
 
 - Search for developer conferences and events with filtering options
@@ -36,14 +30,6 @@ docker run -i mcp/conferences
 ### Configuration and Usage
 
 The plugin works automatically with no additional configuration required, as it fetches data from public sources.
-
-#### Optional Arguments
-
-- `--transport`: Choose transport type (`stdio` [default] or `sse`)
-- `--port`: Port number for SSE transport (default: 8000)
-- `--verbose`: Increase logging verbosity (can be used multiple times)
-  - `-v` or `--verbose`: Set logging to INFO level
-  - `-vv` or `--verbose --verbose`: Set logging to DEBUG level
 
 ## IDE Integration
 
@@ -74,44 +60,6 @@ Using Docker:
         "-i",
         "mcp/conferences"
       ]
-    }
-  }
-}
-```
-
-### Cursor IDE Setup
-
-1. Open Cursor Settings
-2. Navigate to `Features` > `MCP Servers` (or directly to `MCP`)
-3. Click `+ Add new global MCP server`
-
-#### JSON Configuration for stdio Transport
-
-```json
-{
-  "mcpServers": {
-    "mcp-conferences": {
-      "command": "developers-conferences-agenda-mcp"
-    }
-  }
-}
-```
-
-#### SSE Transport Configuration
-
-First start the server:
-
-```bash
-developers-conferences-agenda-mcp --transport sse --port 9000
-```
-
-Then configure in Cursor:
-
-```json
-{
-  "mcpServers": {
-    "mcp-conferences-sse": {
-      "url": "http://localhost:9000/sse"
     }
   }
 }
