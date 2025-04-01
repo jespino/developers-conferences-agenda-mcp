@@ -44,6 +44,14 @@ type SearchEventsArgs struct {
 	Limit       int    `json:"limit" jsonschema:"description=Maximum number of events to return"`
 }
 
+type LimitArgs struct {
+	Limit int `json:"limit" jsonschema:"description=Maximum number of events to return"`
+}
+
+type DaysArgs struct {
+	Days int `json:"date" jsonschema:"description=Filter events based on number of days before the end of the CFP"`
+}
+
 // FetchAndParseEvents retrieves the event data from the URL
 func fetchAndParseEvents() ([]Event, error) {
 	resp, err := http.Get(eventDataURL)
@@ -164,7 +172,7 @@ func main() {
 	}
 
 	// Register tool for events with open CFPs
-	err = server.RegisterTool("open_cfps", "Get events with open CFP (Call for Papers)", func(limit int) (*mcp_golang.ToolResponse, error) {
+	err = server.RegisterTool("open_cfps", "Get events with open CFP (Call for Papers)", func(args LimitArgs) (*mcp_golang.ToolResponse, error) {
 		events, err := fetchAndParseEvents()
 		if err != nil {
 			return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(fmt.Sprintf("Error fetching events: %s", err))), nil
@@ -178,7 +186,7 @@ func main() {
 			if event.CFPEndDate.After(now) && event.CFPUrl != "" {
 				openCFPEvents = append(openCFPEvents, event)
 
-				if limit > 0 && len(openCFPEvents) >= limit {
+				if args.Limit > 0 && len(openCFPEvents) >= args.Limit {
 					break
 				}
 			}
@@ -241,7 +249,7 @@ func main() {
 	}
 
 	// Register tool to get upcoming events
-	err = server.RegisterTool("upcoming_events", "Get upcoming developer conferences and events", func(limit int) (*mcp_golang.ToolResponse, error) {
+	err = server.RegisterTool("upcoming_events", "Get upcoming developer conferences and events", func(args LimitArgs) (*mcp_golang.ToolResponse, error) {
 		events, err := fetchAndParseEvents()
 		if err != nil {
 			return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(fmt.Sprintf("Error fetching events: %s", err))), nil
@@ -254,7 +262,7 @@ func main() {
 			if event.StartDate.After(now) {
 				upcomingEvents = append(upcomingEvents, event)
 
-				if limit > 0 && len(upcomingEvents) >= limit {
+				if args.Limit > 0 && len(upcomingEvents) >= args.Limit {
 					break
 				}
 			}
@@ -272,9 +280,9 @@ func main() {
 	}
 
 	// Register tool to get CFP deadlines soon
-	err = server.RegisterTool("cfp_deadlines_soon", "Get events with CFP deadlines approaching within days", func(days int) (*mcp_golang.ToolResponse, error) {
-		if days <= 0 {
-			days = 30 // Default to 30 days if not specified
+	err = server.RegisterTool("cfp_deadlines_soon", "Get events with CFP deadlines approaching within days", func(args DaysArgs) (*mcp_golang.ToolResponse, error) {
+		if args.Days <= 0 {
+			args.Days = 30 // Default to 30 days if not specified
 		}
 
 		events, err := fetchAndParseEvents()
@@ -283,7 +291,7 @@ func main() {
 		}
 
 		now := time.Now()
-		deadline := now.AddDate(0, 0, days)
+		deadline := now.AddDate(0, 0, args.Days)
 		var approachingCFPs []Event
 
 		for _, event := range events {
@@ -317,4 +325,3 @@ func contains(s, substr string) bool {
 	s, substr = strings.ToLower(s), strings.ToLower(substr)
 	return strings.Contains(s, substr)
 }
-
