@@ -1,6 +1,12 @@
 # Developers Conferences Agenda MCP Plugin
 
-This is a plugin for the [MCP (Metoro Client Protocol)](https://github.com/metoro-io/mcp-golang) that provides access to upcoming developer conferences and events. It fetches data from [developers.events](https://developers.events/) and exposes it through various tools and resources.
+[MCP](https://github.com/metoro-io/mcp-golang) server that provides access to developer conferences and events data. This plugin fetches information from [developers.events](https://developers.events/) and makes it available through MCP-compatible clients like Claude.
+
+## Feature Demo
+
+![Demo GIF](https://example.com/placeholder-for-demo.gif)
+
+*Demonstration of searching for events with upcoming CFP deadlines*
 
 ## Features
 
@@ -10,17 +16,113 @@ This is a plugin for the [MCP (Metoro Client Protocol)](https://github.com/metor
 - Find events with approaching CFP deadlines
 - Access event data through MCP resources
 
-## Installation
+## Setup Guide
+
+### Installation
+
+Choose one of these installation methods:
 
 ```bash
+# Using Go
 go install github.com/jespino/developers-conferences-agenda-mcp@latest
+
+# Using Docker
+git clone https://github.com/jespino/developers-conferences-agenda-mcp.git
+cd developers-conferences-agenda-mcp
+docker build -t mcp/conferences .
+docker run -i mcp/conferences
 ```
 
-## Usage
+### Configuration and Usage
 
-This plugin works with MCP-compatible clients. Once registered with an MCP client, you can use the following tools and resources:
+The plugin works automatically with no additional configuration required, as it fetches data from public sources.
 
-### Tools
+#### Optional Arguments
+
+- `--transport`: Choose transport type (`stdio` [default] or `sse`)
+- `--port`: Port number for SSE transport (default: 8000)
+- `--verbose`: Increase logging verbosity (can be used multiple times)
+  - `-v` or `--verbose`: Set logging to INFO level
+  - `-vv` or `--verbose --verbose`: Set logging to DEBUG level
+
+## IDE Integration
+
+### Claude Desktop Setup
+
+Using Go:
+
+```json
+{
+  "mcpServers": {
+    "mcp-conferences": {
+      "command": "developers-conferences-agenda-mcp"
+    }
+  }
+}
+```
+
+Using Docker:
+
+```json
+{
+  "mcpServers": {
+    "mcp-conferences": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "mcp/conferences"
+      ]
+    }
+  }
+}
+```
+
+### Cursor IDE Setup
+
+1. Open Cursor Settings
+2. Navigate to `Features` > `MCP Servers` (or directly to `MCP`)
+3. Click `+ Add new global MCP server`
+
+#### JSON Configuration for stdio Transport
+
+```json
+{
+  "mcpServers": {
+    "mcp-conferences": {
+      "command": "developers-conferences-agenda-mcp"
+    }
+  }
+}
+```
+
+#### SSE Transport Configuration
+
+First start the server:
+
+```bash
+developers-conferences-agenda-mcp --transport sse --port 9000
+```
+
+Then configure in Cursor:
+
+```json
+{
+  "mcpServers": {
+    "mcp-conferences-sse": {
+      "url": "http://localhost:9000/sse"
+    }
+  }
+}
+```
+
+## Resources
+
+- `events://all`: All developer conferences and events
+- `events://open-cfps`: Events with open Call for Papers
+
+## Available Tools
 
 | Tool Name | Description |
 |-----------|-------------|
@@ -28,13 +130,6 @@ This plugin works with MCP-compatible clients. Once registered with an MCP clien
 | `open_cfps` | Get events with open CFP (Call for Papers) |
 | `upcoming_events` | Get upcoming developer conferences and events |
 | `cfp_deadlines_soon` | Get events with CFP deadlines approaching within specified days |
-
-### Resources
-
-| Resource URI | Description |
-|--------------|-------------|
-| `events://all` | All developer conferences and events |
-| `events://open-cfps` | Events with open Call for Papers |
 
 ## Examples
 
@@ -59,22 +154,48 @@ This plugin works with MCP-compatible clients. Once registered with an MCP clien
 }
 ```
 
-## Data Source
+## Development & Debugging
 
-Event data is fetched from [developers.events](https://developers.events/) which is a community-maintained list of developer conferences and events.
+### Local Development Setup
 
-## Development
+Clone the repository and run locally:
 
-### Running tests
+```bash
+git clone https://github.com/jespino/developers-conferences-agenda-mcp.git
+cd developers-conferences-agenda-mcp
+go run main.go
+```
+
+### Running Tests
 
 ```bash
 go test -v ./...
 ```
 
-## Contributing
+### Debugging Tools
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+```bash
+# Using MCP Inspector
+npx @modelcontextprotocol/inspector developers-conferences-agenda-mcp
+
+# For local development version
+npx @modelcontextprotocol/inspector go run main.go
+```
+
+## Security
+
+- This plugin only accesses publicly available data
+- No authentication credentials are required
+- No sensitive data is collected or stored
+
+## Data Source
+
+Event data is fetched from [developers.events](https://developers.events/) which is a community-maintained list of developer conferences and events.
 
 ## License
 
-[MIT License](LICENSE)
+Licensed under MIT - see [LICENSE](LICENSE) file.
+
+## Topics
+
+`mcp` `conferences` `events` `developer-conferences` `cfp`
