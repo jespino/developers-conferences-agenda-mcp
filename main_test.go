@@ -181,8 +181,8 @@ func TestMillisToTime(t *testing.T) {
 		expected time.Time
 	}{
 		{0, time.Time{}},
-		{1554323200000, time.Date(2019, 4, 3, 22, 0, 0, 0, time.UTC)},
-		{1762752000000, time.Date(2025, 10, 15, 16, 0, 0, 0, time.UTC)},
+		{1554323200000, time.Date(2019, 4, 3, 20, 26, 40, 0, time.UTC)},
+		{1762752000000, time.Date(2025, 11, 10, 5, 20, 0, 0, time.UTC)},
 	}
 
 	for _, tc := range testCases {
