@@ -16,15 +16,29 @@ var eventDataURL = "https://developers.events/all-events.json"
 
 // Event represents a developer conference or event
 type Event struct {
-	Name        string    `json:"name"`
-	URL         string    `json:"url"`
-	StartDate   time.Time `json:"startDate"`
-	EndDate     time.Time `json:"endDate"`
-	Location    string    `json:"location"`
-	CFPEndDate  time.Time `json:"cfpEndDate,omitempty"`
-	CFPUrl      string    `json:"cfpUrl,omitempty"`
-	Description string    `json:"description,omitempty"`
-	// Additional fields may exist based on the actual JSON structure
+	Name           string    `json:"name"`
+	DateTimestamps []int64   `json:"date"`
+	URL            string    `json:"hyperlink"`
+	Location       string    `json:"location"`
+	City           string    `json:"city"`
+	Country        string    `json:"country"`
+	Misc           string    `json:"misc"`
+	CFP            CFPInfo   `json:"cfp"`
+	ClosedCaptions bool      `json:"closedCaptions"`
+	Scholarship    bool      `json:"scholarship"`
+	Status         string    `json:"status"`
+	
+	// Computed fields (not directly in JSON)
+	StartDate   time.Time `json:"-"`
+	EndDate     time.Time `json:"-"`
+	CFPEndDate  time.Time `json:"-"`
+}
+
+// CFPInfo represents Call for Papers information
+type CFPInfo struct {
+	Link       string `json:"link"`
+	Until      string `json:"until"`
+	UntilDate  int64  `json:"untilDate"`
 }
 
 // EventData represents the collection of events
@@ -59,6 +73,14 @@ func FetchAndParseEvents() ([]Event, error) {
 }
 
 // fetchAndParseEvents retrieves the event data from the URL
+// millisToTime converts a millisecond timestamp to time.Time
+func millisToTime(millis int64) time.Time {
+	if millis == 0 {
+		return time.Time{}
+	}
+	return time.Unix(0, millis*int64(time.Millisecond))
+}
+
 func fetchAndParseEvents() ([]Event, error) {
 	resp, err := http.Get(eventDataURL)
 	if err != nil {
@@ -75,17 +97,38 @@ func fetchAndParseEvents() ([]Event, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	var data []Event
-	if err := json.Unmarshal(body, &data); err != nil {
+	var events []Event
+	if err := json.Unmarshal(body, &events); err != nil {
 		// If direct unmarshal fails, try with wrapper structure
 		var wrappedData EventData
 		if err := json.Unmarshal(body, &wrappedData); err != nil {
 			return nil, fmt.Errorf("failed to parse event data: %w", err)
 		}
-		data = wrappedData.Events
+		events = wrappedData.Events
 	}
 
-	return data, nil
+	// Process computed fields
+	for i := range events {
+		// Set start and end dates from the date array
+		if len(events[i].DateTimestamps) > 0 {
+			events[i].StartDate = millisToTime(events[i].DateTimestamps[0])
+			
+			// If there's more than one date, use the last one as end date
+			if len(events[i].DateTimestamps) > 1 {
+				events[i].EndDate = millisToTime(events[i].DateTimestamps[len(events[i].DateTimestamps)-1])
+			} else {
+				// If only one date, use it for both start and end
+				events[i].EndDate = events[i].StartDate
+			}
+		}
+		
+		// Process CFP end date
+		if events[i].CFP.UntilDate > 0 {
+			events[i].CFPEndDate = millisToTime(events[i].CFP.UntilDate)
+		}
+	}
+
+	return events, nil
 }
 
 func main() {
@@ -147,7 +190,7 @@ func main() {
 			}
 
 			// CFP filters
-			if args.HasOpenCFP && (!event.CFPEndDate.After(now) || event.CFPUrl == "") {
+			if args.HasOpenCFP && (!event.CFPEndDate.After(now) || event.CFP.Link == "") {
 				continue
 			}
 			if !cfpFromDate.IsZero() && event.CFPEndDate.Before(cfpFromDate) {
@@ -188,8 +231,8 @@ func main() {
 		var openCFPEvents []Event
 
 		for _, event := range events {
-			// Only include events with open CFPs (CFP deadline in the future and has CFP URL)
-			if event.CFPEndDate.After(now) && event.CFPUrl != "" {
+			// Only include events with open CFPs (CFP deadline in the future and has CFP link)
+			if event.CFPEndDate.After(now) && event.CFP.Link != "" {
 				openCFPEvents = append(openCFPEvents, event)
 
 				if args.Limit > 0 && len(openCFPEvents) >= args.Limit {
@@ -238,7 +281,7 @@ func main() {
 		var openCFPEvents []Event
 
 		for _, event := range events {
-			if event.CFPEndDate.After(now) && event.CFPUrl != "" {
+			if event.CFPEndDate.After(now) && event.CFP.Link != "" {
 				openCFPEvents = append(openCFPEvents, event)
 			}
 		}
@@ -302,7 +345,7 @@ func main() {
 
 		for _, event := range events {
 			// Include events where CFP is still open but deadline is approaching
-			if event.CFPEndDate.After(now) && event.CFPEndDate.Before(deadline) && event.CFPUrl != "" {
+			if event.CFPEndDate.After(now) && event.CFPEndDate.Before(deadline) && event.CFP.Link != "" {
 				approachingCFPs = append(approachingCFPs, event)
 			}
 		}

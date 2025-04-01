@@ -8,6 +8,14 @@ import (
 	"time"
 )
 
+// millisToTime helper for tests (duplicate of the one in main.go)
+func millisToTime(millis int64) time.Time {
+	if millis == 0 {
+		return time.Time{}
+	}
+	return time.Unix(0, millis*int64(time.Millisecond))
+}
+
 func TestContains(t *testing.T) {
 	testCases := []struct {
 		s        string
@@ -43,22 +51,30 @@ func TestFetchAndParseEvents(t *testing.T) {
 	t.Run("Successfully parses direct array JSON", func(t *testing.T) {
 		// Create test server with mock response
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			events := []Event{
+			events := []map[string]interface{}{
 				{
-					Name:      "TestConf 2025",
-					URL:       "https://testconf.example.com",
-					StartDate: time.Date(2025, 10, 15, 0, 0, 0, 0, time.UTC),
-					EndDate:   time.Date(2025, 10, 17, 0, 0, 0, 0, time.UTC),
-					Location:  "Virtual",
+					"name":      "TestConf 2025",
+					"hyperlink": "https://testconf.example.com",
+					"date":      []int64{1762752000000}, // Oct 15, 2025
+					"location":  "Virtual",
+					"city":      "Virtual",
+					"country":   "Online",
+					"cfp":       map[string]interface{}{},
+					"status":    "open",
 				},
 				{
-					Name:       "DevTest Summit",
-					URL:        "https://devtest.example.com",
-					StartDate:  time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC),
-					EndDate:    time.Date(2025, 11, 3, 0, 0, 0, 0, time.UTC),
-					Location:   "Berlin, Germany",
-					CFPEndDate: time.Date(2025, 8, 15, 0, 0, 0, 0, time.UTC),
-					CFPUrl:     "https://devtest.example.com/cfp",
+					"name":      "DevTest Summit",
+					"hyperlink": "https://devtest.example.com",
+					"date":      []int64{1764048000000, 1764220800000}, // Nov 1-3, 2025
+					"location":  "Berlin, Germany",
+					"city":      "Berlin",
+					"country":   "Germany",
+					"cfp": map[string]interface{}{
+						"link":       "https://devtest.example.com/cfp",
+						"until":      "15-August-2025",
+						"untilDate":  1754323200000, // Aug 15, 2025
+					},
+					"status":    "open",
 				},
 			}
 			json.NewEncoder(w).Encode(events)
@@ -81,22 +97,30 @@ func TestFetchAndParseEvents(t *testing.T) {
 		if events[0].Name != "TestConf 2025" {
 			t.Errorf("Expected first event name to be 'TestConf 2025', got '%s'", events[0].Name)
 		}
-		if events[1].CFPUrl != "https://devtest.example.com/cfp" {
-			t.Errorf("Expected second event CFP URL to be 'https://devtest.example.com/cfp', got '%s'", events[1].CFPUrl)
+		if events[1].CFP.Link != "https://devtest.example.com/cfp" {
+			t.Errorf("Expected second event CFP URL to be 'https://devtest.example.com/cfp', got '%s'", events[1].CFP.Link)
+		}
+		// Check the computed fields
+		expectedStartDate := millisToTime(1764048000000)
+		if !events[1].StartDate.Equal(expectedStartDate) {
+			t.Errorf("Expected second event start date to be %v, got %v", expectedStartDate, events[1].StartDate)
 		}
 	})
 
 	t.Run("Successfully parses wrapped JSON", func(t *testing.T) {
 		// Create test server with mock response
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			events := EventData{
-				Events: []Event{
+			events := map[string]interface{}{
+				"events": []map[string]interface{}{
 					{
-						Name:      "TestConf 2025",
-						URL:       "https://testconf.example.com",
-						StartDate: time.Date(2025, 10, 15, 0, 0, 0, 0, time.UTC),
-						EndDate:   time.Date(2025, 10, 17, 0, 0, 0, 0, time.UTC),
-						Location:  "Virtual",
+						"name":      "TestConf 2025",
+						"hyperlink": "https://testconf.example.com",
+						"date":      []int64{1762752000000}, // Oct 15, 2025
+						"location":  "Virtual",
+						"city":      "Virtual",
+						"country":   "Online",
+						"cfp":       map[string]interface{}{},
+						"status":    "open",
 					},
 				},
 			}
@@ -155,6 +179,25 @@ func TestFetchAndParseEvents(t *testing.T) {
 			t.Fatal("Expected error for malformed JSON, got nil")
 		}
 	})
+}
+
+func TestMillisToTime(t *testing.T) {
+	testCases := []struct {
+		millis   int64
+		expected time.Time
+	}{
+		{0, time.Time{}},
+		{1554323200000, time.Date(2019, 4, 3, 22, 0, 0, 0, time.UTC)},
+		{1762752000000, time.Date(2025, 10, 15, 16, 0, 0, 0, time.UTC)},
+	}
+
+	for _, tc := range testCases {
+		result := millisToTime(tc.millis)
+		// Compare Unix timestamps since time zones might differ
+		if result.Unix() != tc.expected.Unix() {
+			t.Errorf("millisToTime(%d) = %v, want %v", tc.millis, result, tc.expected)
+		}
+	}
 }
 
 func TestFetchRealEvents(t *testing.T) {
