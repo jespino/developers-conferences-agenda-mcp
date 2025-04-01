@@ -156,3 +156,37 @@ func TestFetchAndParseEvents(t *testing.T) {
 		}
 	})
 }
+
+func TestFetchRealEvents(t *testing.T) {
+	// This test fetches data from the real endpoint
+	events, err := FetchAndParseEvents()
+	if err != nil {
+		t.Fatalf("Error fetching real events: %v", err)
+	}
+	
+	// Verify we have events
+	if len(events) == 0 {
+		t.Error("Expected to receive events, but got empty array")
+	}
+	
+	// Verify basic data structure
+	for i, event := range events {
+		if event.Name == "" {
+			t.Errorf("Event %d has empty name", i)
+		}
+		if event.URL == "" {
+			t.Errorf("Event %d has empty URL", i)
+		}
+		if event.StartDate.IsZero() {
+			t.Errorf("Event %d has zero StartDate", i)
+		}
+		if event.EndDate.IsZero() {
+			t.Errorf("Event %d has zero EndDate", i)
+		}
+		if event.Location == "" {
+			t.Errorf("Event %d has empty Location", i)
+		}
+	}
+	
+	t.Logf("Successfully fetched and parsed %d events from real endpoint", len(events))
+}
